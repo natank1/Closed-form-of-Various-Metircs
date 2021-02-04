@@ -1,9 +1,9 @@
 import torch
 import scipy.linalg as lin_alg
 import numpy as np
-def dist_W2_torch(mean1, cov1, mean2, cov2):
+def dist_W2_torch(mean1, cov1, mean2, cov2, index):
     delta_mean = mean1-mean2
-    delta_2_norm= delta_mean.matmul(delta_mean)
+    delta_2_norm= torch.pow(torch.norm(delta_mean,dim=index),2)
     sqrt_cov1= lin_alg.fractional_matrix_power( cov1, 0.5)
     mega_mat=  2*torch.tensor(lin_alg.fractional_matrix_power( sqrt_cov1*cov2.detach().numpy()*sqrt_cov1 , 0.5))
     w2=delta_2_norm+torch.trace(cov1+cov2-mega_mat)
@@ -11,7 +11,7 @@ def dist_W2_torch(mean1, cov1, mean2, cov2):
 
 def dist_W2_torch_diag(mean1, cov1, mean2, cov2,index):
     delta_mean = mean1-mean2
-    delta_2_norm= delta_mean.matmul(delta_mean)
+    delta_2_norm= torch.pow(torch.norm(delta_mean),2)
 
     sqrt_cov1= torch.sqrt( cov1)
     mega_mat=  cov1+cov2-2*torch.sqrt(torch.mul(sqrt_cov1,torch.mul(cov2,sqrt_cov1)))
@@ -20,10 +20,10 @@ def dist_W2_torch_diag(mean1, cov1, mean2, cov2,index):
 
 
 
-def dist_W2_torch_standard(mean1, cov1, dist_dim):
+def dist_W2_torch_standard(mean1, cov1, dist_dim,index):
     # Inouts are mean and varaice (not std! ,varaince)
     # lat_dim = mean1.shape[sample_index]
-    norm_mu=mean1.matmul(mean1)
+    norm_mu=torch.pow(torch.norm(mean1,dim=index),2)
 
     trace_of_mega= 2*np.trace( lin_alg.fractional_matrix_power(cov1,0.5))
 
@@ -33,10 +33,11 @@ def dist_W2_torch_standard(mean1, cov1, dist_dim):
 
 
 def dist_W2_diag_standard(mean1, cov1, dimension,index):
-    norm_mu = mean1.matmul(mean1)
+    norm_mu = torch.pow(torch.norm(mean1,dim=index),2)
     mega_trace=2* torch.sum(torch.sqrt(cov1),dim=index)
-    tr1 =torch.sum(cov1,dim=0)
+    tr1 =torch.sum(cov1,dim=index)
     w2= norm_mu+tr1+dimension -mega_trace
+
     return w2
 
 
@@ -52,14 +53,14 @@ if __name__=='__main__':
     u = torch.tensor([2.1, 0.9, 4.1, 0.3])
     z0 = torch.eye(4) * u
     print ("old ")
-    print(dist_W2_torch(y,z,y2,z0))
+    print(dist_W2_torch(y,z,y2,z0,0))
     print(dist_W2_torch_diag(y, t, y2, u, 0))
 
     # print (dist_W2_torch(y, x, y2, x2))
     print ("on your mark")
-    print(dist_W2_torch(y, z, torch.zeros(4),torch.eye(4) ))
+    print(dist_W2_torch(y, z, torch.zeros(4),torch.eye(4) ,0))
 
-    print (dist_W2_torch_standard(y,z,4))
+    print (dist_W2_torch_standard(y,z,4,0))
     print(dist_W2_torch_diag(y, t, torch.zeros(4), torch.ones(4), 0))
     print(dist_W2_diag_standard(y, t, 4, 0))
     exit(444)

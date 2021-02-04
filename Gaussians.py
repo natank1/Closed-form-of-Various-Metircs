@@ -30,21 +30,21 @@ def kl_mult_gauss_diag(mean1, cov1, mean2, cov2,dimension,index=0):
     return kl_div
 
 
-def kl_mult_gauss_standard(mean1, cov1,dimension):
+def kl_mult_gauss_standard(mean1, cov1,dimension,index):
 
     cov1_det = torch.det(cov1)
     log_cov = -torch.log(cov1_det)
     tr_cov =torch.trace(cov1)
-    norm_mu = mean1.matmul(mean1)
+    norm_mu = torch.pow(torch.norm(mean1,dim=index),2)
     kl_div= 0.5 * (log_cov - dimension+ tr_cov + norm_mu)
     return kl_div
 
 
 def kl_diag_standartd(mean1, cov1,dimension,index=0):
 
-    log_cov = -torch.sum(torch.log(cov1))
+    log_cov = -torch.sum(torch.log(cov1),dim=index)
     tr_cov =torch.sum(cov1,dim=index)
-    norm_mu = mean1.matmul(mean1)
+    norm_mu = torch.pow(torch.norm(mean1,dim=index),2)
     kl_div= 0.5 * (log_cov - dimension+ tr_cov + norm_mu)
     return kl_div
 
@@ -69,7 +69,7 @@ if __name__=='__main__':
     print(kl_mult_gauss_diag(y , t, torch.zeros(4), torch.ones(4),4, index=0))
 
 
-    print ( kl_mult_gauss_standard(y, t0, 4))
+    print ( kl_mult_gauss_standard(y, t0, 4,0))
     print (kl_diag_standartd(y, t,4,index=0))
 
     exit(12)
