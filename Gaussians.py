@@ -12,6 +12,7 @@ def kl_mult_gauss(mean1, cov1, mean2, cov2,dimension):
     cov2_det=torch.det(cov2)
     cov1_det = torch.det(cov1)
     log_ratio = torch.log(cov2_det / cov1_det)
+
     inverse_2 =torch.inverse(cov2)
     tr_prod =torch.trace(torch.mm(inverse_2,cov1))
     delta_mean= mean1-mean2
@@ -20,24 +21,17 @@ def kl_mult_gauss(mean1, cov1, mean2, cov2,dimension):
     return kl_div
 
 def kl_mult_gauss_diag(mean1, cov1, mean2, cov2,dimension,index=0):
-    det_1= torch.prod(cov1,dim=index)
-    det_2= torch.prod(cov2,dim=index)
-    log_ratio = torch.log(det_2 / det_1)
-
+    log_ratio= torch.sum(torch.log(cov2),dim=index) - torch.sum(torch.log(cov1),dim=index)
     recip_2 = torch.reciprocal(cov2)
-
     delta_mean = mean1 - mean2
-
-
     mat_prod= torch.sum(torch.mul(delta_mean,torch.mul(recip_2,delta_mean)),dim=index)
-
     trace_like =torch.sum(torch.mul(recip_2,cov1))
     kl_div =0.5*(log_ratio-dimension+mat_prod+trace_like)
     return kl_div
 
 
 def kl_mult_gauss_standard(mean1, cov1,dimension):
-    # dimension = mean1.shape[index_loc]
+
     cov1_det = torch.det(cov1)
     log_cov = -torch.log(cov1_det)
     tr_cov =torch.trace(cov1)
@@ -47,8 +41,8 @@ def kl_mult_gauss_standard(mean1, cov1,dimension):
 
 
 def kl_diag_standartd(mean1, cov1,dimension,index=0):
-    cov1_det = torch.prod(cov1, dim=index)
-    log_cov = -torch.log(cov1_det)
+
+    log_cov = -torch.sum(torch.log(cov1))
     tr_cov =torch.sum(cov1,dim=index)
     norm_mu = mean1.matmul(mean1)
     kl_div= 0.5 * (log_cov - dimension+ tr_cov + norm_mu)
