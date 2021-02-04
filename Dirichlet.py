@@ -1,7 +1,8 @@
 import torch
 
 
-
+# This function measure KL divgence for beta and Dirichlet distirbutuin
+#  alpha abd beta are dirchlet distirbutions (in case of Beta dist simly take alpha and beta of size two each)
 def Dirich_KL( alpha, beta, index ):
     alpha0 =torch.sum(alpha ,dim=index)
     beta0 = torch.sum(beta, dim=index)
@@ -20,5 +21,5 @@ if __name__ =='__main__':
     a=0
     a=torch.tensor([3.,0.5])
     b=torch.tensor([0.5,3.])
-     
+
     print (Dirich_KL( b, a, 0 ))
