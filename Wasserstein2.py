@@ -1,10 +1,32 @@
 import torch
 import scipy.linalg as lin_alg
 import numpy as np
-def dist_W2_torch(mean1, cov1, mean2, cov2, index):
+
+#This function supports batches Neverthelss it iis exposed to symeig issues( to be fixed)
+def dist_W2_batch(mean1, cov1, mean2, cov2, index):
     delta_mean = mean1-mean2
     delta_2_norm= torch.pow(torch.norm(delta_mean,dim=index),2)
-    sqrt_cov1= lin_alg.fractional_matrix_power( cov1, 0.5)
+    e0, v0 = torch.symeig(cov1, eigenvectors=True)
+    xxa = torch.diag_embed(torch.sqrt(e0), offset=0, dim1=-2, dim2=-1)
+    aa=v0.transpose(-2,-1)
+    sqrt_cov1 = torch.matmul(torch.matmul(v0, xxa), aa)
+    mm =torch.matmul(torch.matmul(sqrt_cov1,cov2),sqrt_cov1)
+
+    e1, v1 = torch.symeig(mm, eigenvectors=True)
+
+    xxb = torch.diag_embed(torch.sqrt(e1), offset=0, dim1=-2, dim2=-1)
+    aa = v1.transpose(-2, -1)
+    sqrt_mm = 2*torch.matmul(torch.matmul(v1, xxb), aa)
+    ff=torch.diagonal(cov1+cov2-sqrt_mm, dim1=-2, dim2=-1).sum(-1)
+    w2=delta_2_norm+ff
+    return w2
+
+
+#For no batches it works great
+def dist_W2(mean1, cov1, mean2, cov2, index):
+    delta_mean = mean1-mean2
+    delta_2_norm= torch.pow(torch.norm(delta_mean,dim=index),2)
+    sqrt_cov1= lin_alg.fractional_matrix_power( cov1.detach().numpy(), 0.5)
     mega_mat=  2*torch.tensor(lin_alg.fractional_matrix_power( sqrt_cov1*cov2.detach().numpy()*sqrt_cov1 , 0.5))
     w2=delta_2_norm+torch.trace(cov1+cov2-mega_mat)
     return w2
@@ -41,47 +63,4 @@ def dist_W2_diag_standard(mean1, cov1, dimension,index):
     return w2
 
 
-if __name__=='__main__':
-    x= 2+torch.rand(size=(4,4))
-    y =  torch.rand(4)
-    x = torch.t(x).matmul(x)
-    x2 = 5.2 + torch.rand(size=(4, 4))
-    y2 = 3 + torch.rand(4)
-    x2 = torch.t(x2).matmul(x2)
-    t=torch.tensor([1.4,2,2.1,3])
-    z=torch.eye(4)*t
-    u = torch.tensor([2.1, 0.9, 4.1, 0.3])
-    z0 = torch.eye(4) * u
-    print ("old ")
-    print(dist_W2_torch(y,z,y2,z0,0))
-    print(dist_W2_torch_diag(y, t, y2, u, 0))
 
-    # print (dist_W2_torch(y, x, y2, x2))
-    print ("on your mark")
-    print(dist_W2_torch(y, z, torch.zeros(4),torch.eye(4) ,0))
-
-    print (dist_W2_torch_standard(y,z,4,0))
-    print(dist_W2_torch_diag(y, t, torch.zeros(4), torch.ones(4), 0))
-    print(dist_W2_diag_standard(y, t, 4, 0))
-    exit(444)
-
-    cc =lin_alg.fractional_matrix_power(x,0.5)
-    cd = lin_alg.fractional_matrix_power(x2, 0.5)
-    v=cc*x2.detach().numpy()*cc
-    cd = lin_alg.fractional_matrix_power(v, 0.5)
-    print(np.trace(cd))
-
-    print (torch.trace(torch.tensor(cd)))
-
-    exit(4444)
-    c2=torch.tensor(cc)
-    print (c2.t().matmul(c2))
-
-
-    exit(333)
-
-    x2=5.2+torch.rand(size=(4,4))
-    y2= 3+torch.rand(4)
-    x2=torch.t(x2).matmul(x2)
-    # aa=dist_W2_torch(y, x, y, x, 0)
-    # aa = dist_W2_torch(y, x, y, x, 0)
