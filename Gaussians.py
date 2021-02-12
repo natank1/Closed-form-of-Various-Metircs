@@ -44,13 +44,24 @@ def kl_mult_gauss(mean1, cov1, mean2, cov2,dimension):
 
 # Here we assume that the covaraince matrices are diagonal hence held as vectors
 def kl_mult_gauss_diag(mean1, cov1, mean2, cov2,dimension,index=0):
-    log_ratio= torch.sum(torch.log(cov2),dim=index) - torch.sum(torch.log(cov1),dim=index)
+    log_ratio= torch.sum(torch.log(cov2),dim=-1) - torch.sum(torch.log(cov1),dim=-1)
     recip_2 = torch.reciprocal(cov2)
     delta_mean = mean1 - mean2
-    mat_prod= torch.sum(torch.mul(delta_mean,torch.mul(recip_2,delta_mean)),dim=index)
-    trace_like =torch.sum(torch.mul(recip_2,cov1))
-    kl_div =0.5*(log_ratio-dimension+mat_prod+trace_like)
+    mat_prod= torch.sum(torch.mul(torch.mul(recip_2,delta_mean),delta_mean),dim=-1)
+    trace_like =torch.sum(torch.mul(recip_2,cov1),dim=-1)
+    kl_div = 0.5*(log_ratio-dimension+mat_prod+trace_like)
     return kl_div
+
+def kl_mult_gauss_diag(diag_g0, diag_g1):
+
+    log_ratio= torch.sum(torch.log(diag_g1.scale),dim=-1) - torch.sum(torch.log(diag_g0.scale),dim=-1)
+    recip_2 = torch.reciprocal(diag_g1.scale)
+    delta_mean = diag_g0.loc - diag_g1.loc
+    mat_prod= torch.sum(torch.mul(torch.mul(recip_2,delta_mean),delta_mean),dim=-1)
+    trace_like =torch.sum(torch.mul(recip_2,diag_g0.scale),dim=-1)
+    kl_div = 0.5*(log_ratio-diag_g0.dimension+mat_prod+trace_like)
+    return kl_div
+
 
 # The notion standrrd assumes that we compare the matrix to the standrard Gaussian thus
 # we have obly a single gaussian
@@ -70,5 +81,12 @@ def kl_diag_standartd(mean1, cov1,dimension,index=0):
     tr_cov =torch.sum(cov1,dim=index)
     norm_mu = torch.pow(torch.norm(mean1,dim=index),2)
     kl_div= 0.5 * (log_cov - dimension+ tr_cov + norm_mu)
+    return kl_div
+
+def kl_new_diag_standartd(diag_g0):
+    log_cov = -torch.sum(torch.log(diag_g0.scale),dim=-1)
+    tr_cov =torch.sum(diag_g0.scale,dim=-1)
+    norm_mu = torch.pow(torch.norm(diag_g0.loc,dim=-1),2)
+    kl_div= 0.5 * (log_cov - diag_g0.dimension+ tr_cov + norm_mu)
     return kl_div
 
