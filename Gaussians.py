@@ -2,7 +2,29 @@ import torch
 
 #  This file contains set of functions for calcualting KL divergence for different scenarios  of Gaussians
 
+
+from torch.distributions import multivariate_normal as gauss
+from torch.distributions.multivariate_normal import _batch_mahalanobis
+
+from torch.distributions import independent as indep
+
+def kl_ind_mv(mvg0,indep0):
+    delta_mean =mvg0.mean-indep0.mean
+    indep_recip =torch.reciprocal(indep0.variance)
+    mahlab_term= torch.sum(torch.mul(torch.mul(delta_mean,indep_recip),delta_mean),dim=-1)
+
+    dimension = mvg0.event_shape[0]
+    logdet_gauss = torch.logdet(mvg0.covariance_matrix)
+    log_det_ind= torch.sum(torch.log(indep0.variance),dim=-1)
+    partial_term =log_det_ind-logdet_gauss-dimension
+    first_term =torch.sum(torch.diagonal(torch.mul(torch.unsqueeze(indep_recip,dim=-2),mvg0.covariance_matrix),dim1=-2,dim2=-1),dim=-1)
+    kl_score =0.5*(partial_term+mahlab_term + first_term)
+    return kl_score
+
+
 #Univaraite case we simply receive two means and two standard deviations
+
+
 def kl_univ_gauss(mean1, sig1, mean2, sig2):
     #sig is stnafard  dev no varaince !
     kl_div=torch.log(sig2/sig1)+(torch.pow(sig1,2)+torch.pow(mean1-mean2,2))/(2*torch.pow(sig2,2)) -0.5
